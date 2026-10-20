@@ -1,0 +1,10 @@
+{
+    "cnn": {
+        "data_dir": "d:/workspace_ai/CNNSession/data/cnn/MNSIT/CONV",
+        "classes": 10,
+        "batch_size": 256,
+        "epochs": 5,
+        "lr": 0.001,
+        "use_gpu": true
+    }
+}

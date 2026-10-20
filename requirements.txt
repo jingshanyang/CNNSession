@@ -1,0 +1,62 @@
+# ======================
+# 基础依赖
+# ======================
+# 与PyTorch 2.2.0兼容的版本
+torch==2.2.0
+torchvision==0.17.0
+torchaudio==2.2.0
+
+# ======================
+# CNN 训练相关依赖
+# ======================
+scikit-learn
+numpy<2
+pandas
+matplotlib
+opencv-python
+pillow
+tqdm
+tensorboard
+pyyaml
+requests
+label-studio-sdk
+mlflow
+
+# ======================
+# LLM 相关依赖
+# ======================
+transformers>=4.49.0,<4.58.0
+datasets>=2.16.0,<4.0.0
+peft<=0.17.1
+accelerate<=1.11.0
+bitsandbytes
+sentencepiece
+protobuf
+einops
+# LLaMA-Factory 核心依赖
+trl<=0.9.6
+omegaconf>=2.3.0
+fire>=0.7.0
+modelscope>=1.14.0
+tiktoken>=0.5.0
+sse-starlette>=1.1.6
+gradio>=4.44.1
+librosa>=0.11.0
+# 音频处理相关依赖
+av>=16.0.0
+soxr>=0.3.0
+# 类型检查和命令行工具
+typer>=0.8.0
+
+# ======================
+# 数据库相关依赖
+# ======================
+sqlalchemy
+psycopg2-binary
+
+# ======================
+# Web 服务相关依赖
+# ======================
+flask
+fastapi
+streamlit

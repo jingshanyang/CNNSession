@@ -1,0 +1,93 @@
+version: '2'
+
+services:
+  labelstudio:
+    image: heartexlabs/label-studio:latest
+    container_name: labelstudio
+    ports:
+      - "16701:8080"
+    volumes:
+      - ${DATA_PATH}/labelstudio:/label-studio/data
+      - ./labelstudio/config:/label-studio/config
+    environment:
+      - LABEL_STUDIO_HOST=http://0.0.0.0
+      - LABEL_STUDIO_PORT=8080
+      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+    user: "root"
+    restart: unless-stopped
+    networks:
+      - cnn_network
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.8.0
+    container_name: mlflow
+    volumes:
+      - ${MLFLOW_PATH}:/mlflow
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=file:///mlflow/backend
+      - MLFLOW_ARTIFACT_ROOT=file:///mlflow/artifacts
+    ports:
+      - "16702:5000"
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri $MLFLOW_BACKEND_STORE_URI --artifacts-destination $MLFLOW_ARTIFACT_ROOT --allowed-hosts '*' --uvicorn-opts "--proxy-headers --forwarded-allow-ips '*'"
+    restart: unless-stopped
+    networks:
+      - cnn_network
+
+  trainer:
+    image: cnn-ai-service:latest
+    container_name: trainer
+    volumes:
+      - ./:/workspace
+      - ${DATA_PATH}/labelstudio:/data/labelstudio
+      - ${DATA_PATH}/cnn:/data/cnn
+      - ${DATA_PATH}/nl2sql:/data/nl2sql
+      - ${DATA_PATH}/mlflow:/data/mlflow
+      - ${MODEL_PATH}:/model
+      - ${MLFLOW_PATH}:/mlflow
+      - ${HUGGINGFACE_PATH}:/huggingface
+    environment:
+      - PYTHONPATH=/workspace:/workspace/llama_factory
+      - HF_HOME=/workspace/huggingface
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_EXPERIMENT_NAME=CNN_Finetuning
+      - CONFIG_PATH=/workspace/CNNTrainer/config.json
+      - DATA_DIR=/data/cnn/MNSIT/CONV
+      - STATIC_DIR=/workspace/CNNAPP/static
+      - CUDA_VISIBLE_DEVICES=""
+      - FORCE_CPU=1
+      - USE_CUDA=False
+      - FP16=false
+      - BF16=false
+      - USE_FP16=false
+      - USE_BF16=false
+      - DEFAULT_PRECISION=fp32
+    ports:
+      - "17702:8000"
+      - "17860:7860"
+      - "17701:5000"
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    networks:
+      - cnn_network
+    depends_on:
+      - labelstudio
+      - mlflow
+    command: >
+      bash -c "echo '启动所有服务...' && \
+      echo '1. 启动LLaMA-Factory Web界面...' && \
+      cd /workspace/llama_factory && \
+      python src/webui.py --port 7860 --host 0.0.0.0 --device cpu & \
+      echo '2. 启动CNN APP服务...' && \
+      cd /workspace/CNNAPP && \
+      python serve.py & \
+      echo '3. 服务启动完成！' && \
+      echo '   - LLaMA-Factory: http://localhost:17860' && \
+      echo '   - CNN APP: http://localhost:17701' && \
+      echo '   - NL2SQL服务: http://localhost:17702' && \
+      echo '4. 保持容器运行...' && \
+      tail -f /dev/null"
+
+networks:
+  cnn_network:
+    driver: bridge
